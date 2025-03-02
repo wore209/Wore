@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIP IP & GSM Sorgulama</title>
+    <style>
+        body {
+            background: linear-gradient(to right, #000000, #222222);
+            color: Gold;
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            padding: 50px;
+        }
+        .container {
+            width: 500px;
+            margin: auto;
+            padding: 20px;
+            border: 3px solid gold;
+            border-radius: 15px;
+            background: rgba(34, 34, 34, 0.9);
+            box-shadow: 0 0 20px red;
+        }
+        input, button {
+            width: 90%;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 5px;
+            font-size: 18px;
+            text-align: center;
+        }
+        button {
+            background: gold;
+            color: black;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: orange;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 2px solid gold;
+            background-color: rgba(17, 17, 17, 0.9);
+            display: none;
+            text-align: left;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>VIP IP & GSM Sorgulama</h1>
+        <input type="text" id="ipInput" placeholder="IP adresini gir">
+        <button onclick="checkIP()">START</button>
+        <button onclick="copyResult()">KOPYALA</button>
+        <button onclick="downloadTXT()">TXT İNDİR</button>
+        <div id="output" class="result"></div>
+    </div>
+
+    <script>
+        function checkIP() {
+            var ip = document.getElementById("ipInput").value;
+            if (!ip) {
+                alert("Lütfen bir IP adresi girin!");
+                return;
+            }
+
+            var apiUrl = `https://ipinfo.io/${ip}/json`;
+            var gsmUrl = `https://api.telnyx.com/v2/number_lookup/${ip}`;
+            var riskUrl = `https://ipqualityscore.com/api/json/ip/KEY/${ip}`;
+            var speedUrl = `https://api.fast.com/netflix/speedtest?ip=${ip}`;
+            var geoUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${ip.lat}&longitude=${ip.lon}&localityLanguage=tr`;
+
+            Promise.all([
+                fetch(apiUrl).then(res => res.json()),
+                fetch(gsmUrl).then(res => res.json()),
+                fetch(riskUrl).then(res => res.json()),
+                fetch(speedUrl).then(res => res.json()),
+                fetch(geoUrl).then(res => res.json())
+            ])
+            .then(([data, gsm, risk, speed, geo]) => {
+                document.getElementById("output").innerHTML = `
+                    <b>IP Adresi:</b> ${data.ip} <br>
+                    <b>Şehir:</b> ${data.city} <br>
+                    <b>Bölge:</b> ${data.region} <br>
+                    <b>Ülke:</b> ${data.country} <br>
+                    <b>ISP:</b> ${data.org} <br>
+                    <b>Lokasyon:</b> ${data.loc} <br>
+                    <b>GSM Operatörü:</b> ${gsm.carrier} <br>
+                    <b>Telefon Numarası Tahmini:</b> ${gsm.number} <br>
+                    <b>Cihaz Markası:</b> ${gsm.device_brand} <br>
+                    <b>Bağlantı Türü:</b> ${gsm.network_type} <br>
+                    <b>IMEI Numarası:</b> ${gsm.imei} <br>
+                    <b>VPN Kullanıyor mu?:</b> ${risk.vpn ? "Evet" : "Hayır"} <br>
+                    <b>Proxy Kullanıyor mu?:</b> ${risk.proxy ? "Evet" : "Hayır"} <br>
+                    <b>Botnet Bağlantısı:</b> ${risk.bot_status} <br>
+                    <b>Hız Testi (Download Mbps):</b> ${speed.download} <br>
+                    <b>Hız Testi (Upload Mbps):</b> ${speed.upload} <br>
+                    <b>Zaman Dilimi:</b> ${geo.timezone} <br>
+                    <b>Para Birimi:</b> ${geo.currency} <br>
+                    <b>Haritada Gör:</b> <a href="https://www.google.com/maps?q=${data.loc}" target="_blank">TIKLA</a>
+                `;
+                document.getElementById("output").style.display = "block";
+            })
+            .catch(error => {
+                document.getElementById("output").innerHTML = "<b>Hata oluştu!</b>";
+            });
+        }
+
+        function copyResult() {
+            var text = document.getElementById("output").innerText;
+            navigator.clipboard.writeText(text).then(() => alert("Sonuçlar kopyalandı!"));
+        }
+
+        function downloadTXT() {
+            var text = document.getElementById("output").innerText;
+            var blob = new Blob([text], { type: "text/plain" });
+            var link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "ip_gsm_sorgu_sonucu.txt";
+            link.click();
+        }
+    </script>
+</body>
+</html>
